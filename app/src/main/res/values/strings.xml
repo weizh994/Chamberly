@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Chamberly</string>
+    <string name="title_activity_welcome">WelcomeActivity</string>
+    <string name="welcome">Choose a Display Name!</string>
+    <string name="display_name">Display Name...</string>
+    <string name="continue_button">Continue</string>
+    <string name="register">Register</string>
+    <string name="follow_us_on_social_media">---Follow us on social media:)---</string>
+    <string name="title_activity_create">CreateActivity</string>
+    <string name="title_activity_chat">ChatActivity</string>
+    <string name="title_activity_search">SearchActivity</string>
+    <string name="swipe_right_to_start_chatting">Swipe right to start chatting</string>
+</resources>
