@@ -5,13 +5,20 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
 import android.widget.LinearLayout
+import android.widget.PopupWindow
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 class MessageAdapter(private val uid: String) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val messages: MutableList<Message> = mutableListOf()
+    private var onMessageLongClickListener: OnMessageLongClickListener? = null
+
+    fun setOnMessageLongClickListener(listener: OnMessageLongClickListener) {
+        onMessageLongClickListener = listener
+    }
 
     companion object {
         private const val VIEW_TYPE_ME = 1
@@ -51,6 +58,10 @@ class MessageAdapter(private val uid: String) :
             is MessageViewHolder -> {
                 holder.textSender.text = message.sender_name
                 holder.textMessage.text = message.message_content
+                holder.itemView.setOnLongClickListener {
+                    onMessageLongClickListener?.onMessageLongClick(message)
+                    true
+                }
             }
         }
     }
@@ -78,4 +89,24 @@ class MessageAdapter(private val uid: String) :
         messages.add(message)
         notifyDataSetChanged()
     }
+
+
+    interface OnMessageLongClickListener {
+        fun onMessageLongClick(message: Message)
+    }
+
+    /*private fun showPopupWindow(layoutInflater: LayoutInflater, anchorView: View) {
+        val popupView = layoutInflater.inflate(R.menu.message_popup_menu, null)
+
+        val popupWindow = PopupWindow(popupView, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, true)
+
+        val xOff = (anchorView.width - popupView.measuredWidth) / 2
+        val yOff = (anchorView.height - popupView.measuredHeight) / 2
+
+        popupWindow.showAsDropDown(anchorView, xOff, yOff)
+    }
+    */
+
 }
+
+

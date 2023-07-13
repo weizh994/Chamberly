@@ -70,6 +70,7 @@ class SearchActivity : ComponentActivity() ,KolodaListener{
 
         onBackPressedCallback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
+                releaseCards()
                 val intent = Intent(this@SearchActivity, MainActivity::class.java)
                 startActivity(intent)
             }
@@ -160,8 +161,9 @@ class SearchActivity : ComponentActivity() ,KolodaListener{
         val chamber = (adapter as ChamberAdapter).getItem(position+1)
         Log.e("SearchActivity", "Card swiped left : ${chamber.groupTitle}")
 
+
         firestore.collection("GroupChatIds").document(chamber.groupChatId)
-            .update("publishedPool", false)
+            .update("publishedPool", true)
 
         // Call the super implementation if needed
         super.onCardSwipedLeft(position)
@@ -185,7 +187,7 @@ class SearchActivity : ComponentActivity() ,KolodaListener{
         Log.e("SearchActivity", "Card swiped left : ${chamber.groupTitle}")
 
         firestore.collection("GroupChatIds").document(chamber.groupChatId)
-            .update("publishedPool", false)
+            .update("publishedPool", true)
         // Call the super implementation if needed
         super.onClickLeft(position)
     }
@@ -209,11 +211,21 @@ class SearchActivity : ComponentActivity() ,KolodaListener{
             Log.e("onEmptyDeck", "Initial")
         } else {
             Log.e("onEmptyDeck", "Now it's empty")
+            //TODO: set publishedPool as true again
+            releaseCards()
             fetchChambers()
         }
 
         // Call the super implementation if needed
         super.onEmptyDeck()
+    }
+
+    // When exit the activity, set publishedPool as true again
+    fun releaseCards(){
+        for(chamber in adapter.dataList){
+            firestore.collection("GroupChatIds").document(chamber.groupChatId)
+                .update("publishedPool", true)
+        }
     }
 
     fun joinChat(chamber: Chamber){
@@ -238,6 +250,7 @@ class SearchActivity : ComponentActivity() ,KolodaListener{
     }
 
     override fun onDestroy() {
+        releaseCards()
         onBackPressedCallback.remove()
         super.onDestroy()
     }

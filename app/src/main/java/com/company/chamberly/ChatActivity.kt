@@ -1,10 +1,13 @@
 package com.company.chamberly
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
+import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
@@ -21,27 +24,35 @@ import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
 import java.io.File
 
-class ChatActivity : ComponentActivity() {
+class ChatActivity : ComponentActivity(){
     // TODO: add chat cache
-    private val auth = Firebase.auth        // get current user
-    private val database = Firebase.database// realtime database
-    private val firestore = Firebase.firestore// firestore
     private lateinit var cacheFile : File   // cache file
-    var messages = mutableListOf<Message>() // message list
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var messageAdapter: MessageAdapter
+    private lateinit var groupChatId: String
     private lateinit var onBackPressedCallback: OnBackPressedCallback
+    private var messages = mutableListOf<Message>() // message list
+    private val auth = Firebase.auth                // get current user
+    private val database = Firebase.database        // realtime database
+    private val firestore = Firebase.firestore      // firestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chat)
 
-        val groupChatId = intent.getStringExtra("groupChatId") // get group chat id
-        val recyclerView = findViewById<RecyclerView>(R.id.recyclerViewMessages) // get recycler view
         val sharedPreferences = getSharedPreferences("cache", Context.MODE_PRIVATE) // get shared preferences
         val currentUser = auth.currentUser // get current user
         val uid = sharedPreferences.getString("uid", "") ?: currentUser?.uid // get uid
-        val messageAdapter = MessageAdapter(uid!!) // get message adapter
+
+        messageAdapter = MessageAdapter(uid!!) // create message adapter
+        groupChatId = intent.getStringExtra("groupChatId") ?: "" // get group chat id
+        recyclerView = findViewById(R.id.recyclerViewMessages)         // get recycler view
         recyclerView.adapter = messageAdapter
         recyclerView.layoutManager = LinearLayoutManager(this)
+
+        val messageAdapter = MessageAdapter(uid!!)
+        recyclerView.adapter = messageAdapter
+
 
         //load cache file
         if(groupChatId!=null){
@@ -113,6 +124,13 @@ class ChatActivity : ComponentActivity() {
                 }
         }
 
+        messageAdapter.setOnMessageLongClickListener(object : MessageAdapter.OnMessageLongClickListener {
+            override fun onMessageLongClick(message: Message) {
+                // handle long click
+                showPopupMenu(message)
+            }
+        })
+
 
 
         onBackPressedCallback = object : OnBackPressedCallback(true) {
@@ -131,8 +149,14 @@ class ChatActivity : ComponentActivity() {
                 // delete the group chat id from the user's list
                 database.reference.child(groupChatId).child("Users").child("members").child(auth.currentUser!!.uid).removeValue()
                     .addOnSuccessListener {
-                        firestore.collection("GroupChatIds").document(groupChatId).update("locked" , false)
-                            .addOnSuccessListener { finish() }
+                        firestore.collection("GroupChatIds").document(groupChatId)
+                            .update("locked" , false)
+                            .addOnSuccessListener { firestore.collection("GroupChatIds").document(groupChatId)
+                                .update("publishedPool", true)
+                                .addOnSuccessListener {
+                                    finish()
+                                }
+                            }
                     }
 
             }
@@ -141,6 +165,51 @@ class ChatActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun showPopupMenu(message: Message) {
+        val popupMenu = PopupMenu(this, recyclerView)
+        popupMenu.menuInflater.inflate(R.menu.message_popup_menu, popupMenu.menu)
+        popupMenu.setOnMenuItemClickListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.menu_copy -> {
+                    // handle copy
+                    copyMessage(message)
+                    true
+                }
+                R.id.menu_report ->{
+                    // handle report
+                    true
+                }
+                R.id.menu_block -> {
+                    // handle block
+                    true
+                }
+                // 其他菜单项的处理
+                else -> false
+            }
+        }
+        popupMenu.show()
+    }
+
+    // Menu functions
+    // copy message
+    private fun copyMessage(message: Message) {
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = ClipData.newPlainText("Message", message.message_content)
+        clipboard.setPrimaryClip(clip)
+        Log.e("Holder", "Holder successfully copied: ${message.message_content}")
+
+    }
+    // report user
+    private  fun reportUser(message: Message){
+        // Todo: report user
+
+    }
+    // block user
+    private fun blockUser(message: Message){
+
+    }
+
 
     override fun onDestroy() {
         onBackPressedCallback.remove()
