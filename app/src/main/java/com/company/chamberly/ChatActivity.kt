@@ -1,13 +1,17 @@
 package com.company.chamberly
 
+import android.app.Dialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
+import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.PopupMenu
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
@@ -50,7 +54,11 @@ class ChatActivity : ComponentActivity(){
         recyclerView.adapter = messageAdapter
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        val messageAdapter = MessageAdapter(uid!!)
+        messageAdapter.setOnMessageLongClickListener(object : MessageAdapter.OnMessageLongClickListener {
+            override fun onMessageLongClick(message: Message) {
+                showDialog(message)
+            }
+        })
         recyclerView.adapter = messageAdapter
 
 
@@ -124,15 +132,6 @@ class ChatActivity : ComponentActivity(){
                 }
         }
 
-        messageAdapter.setOnMessageLongClickListener(object : MessageAdapter.OnMessageLongClickListener {
-            override fun onMessageLongClick(message: Message) {
-                // handle long click
-                showPopupMenu(message)
-            }
-        })
-
-
-
         onBackPressedCallback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 exitChat(groupChatId)
@@ -166,31 +165,6 @@ class ChatActivity : ComponentActivity(){
         }
     }
 
-    private fun showPopupMenu(message: Message) {
-        val popupMenu = PopupMenu(this, recyclerView)
-        popupMenu.menuInflater.inflate(R.menu.message_popup_menu, popupMenu.menu)
-        popupMenu.setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.menu_copy -> {
-                    // handle copy
-                    copyMessage(message)
-                    true
-                }
-                R.id.menu_report ->{
-                    // handle report
-                    true
-                }
-                R.id.menu_block -> {
-                    // handle block
-                    true
-                }
-                // 其他菜单项的处理
-                else -> false
-            }
-        }
-        popupMenu.show()
-    }
-
     // Menu functions
     // copy message
     private fun copyMessage(message: Message) {
@@ -215,5 +189,91 @@ class ChatActivity : ComponentActivity(){
         onBackPressedCallback.remove()
         super.onDestroy()
     }
+
+    private fun showDialog(message: Message) {
+        val dialog = Dialog(this, R.style.Dialog)
+        dialog.setContentView(R.layout.dialog_message_options)
+
+        val dialogTitle = dialog.findViewById<TextView>(R.id.DialogTitle)
+        dialogTitle.text = message.sender_name
+        val dialogMessage = dialog.findViewById<TextView>(R.id.MessageContent)
+        dialogMessage.text = message.message_content
+
+        val copyButton = dialog.findViewById<Button>(R.id.buttonCopy)
+        val reportButton = dialog.findViewById<Button>(R.id.buttonReport)
+        val blockButton = dialog.findViewById<Button>(R.id.buttonBlock)
+
+        // set dialog window's width and height
+        val window = dialog.window
+        val layoutParams = WindowManager.LayoutParams()
+        layoutParams.copyFrom(window?.attributes)
+        layoutParams.width = WindowManager.LayoutParams.WRAP_CONTENT
+        layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT
+        window?.attributes = layoutParams
+
+        // set copy button's click listener
+        copyButton.setOnClickListener {
+            copyMessage(message)
+            dialog.dismiss()
+        }
+
+        // set report button's click listener
+        reportButton.setOnClickListener {
+            showReportDialog(message)
+            dialog.dismiss()
+        }
+
+        // set block button's click listener
+        blockButton.setOnClickListener {
+            blockUser(message)
+            dialog.dismiss()
+        }
+
+        // show Dialog
+        dialog.show()
+    }
+
+    private fun showReportDialog(message: Message) {
+        val dialog = Dialog(this)
+        dialog.setContentView(R.layout.dialog_report_options)
+
+        val titleTextView = dialog.findViewById<TextView>(R.id.textReportTitle)
+        titleTextView.text = "Reporting ${message.sender_name}"
+        val harassmentButton = dialog.findViewById<Button>(R.id.buttonHarassment)
+        val inappropriateBehaviorButton =
+            dialog.findViewById<Button>(R.id.buttonInappropriateBehavior)
+        val unsupportiveBehaviorButton =
+            dialog.findViewById<Button>(R.id.buttonUnsupportiveBehavior)
+        val spammingButton = dialog.findViewById<Button>(R.id.buttonSpamming)
+        val annoyingButton = dialog.findViewById<Button>(R.id.buttonAnnoying)
+    }
+
+        /*companion object {
+            private fun showPopupMenu(chatActivity: ChatActivity, message: Message) {
+                val popupMenu = PopupMenu(chatActivity, chatActivity.recyclerView)
+                popupMenu.menuInflater.inflate(R.menu.message_popup_menu, popupMenu.menu)
+                popupMenu.setOnMenuItemClickListener { menuItem ->
+                    when (menuItem.itemId) {
+                        R.id.menu_copy -> {
+                            // handle copy
+                            chatActivity.copyMessage(message)
+                            true
+                        }
+                        R.id.menu_report ->{
+                            // handle report
+                            true
+                        }
+                        R.id.menu_block -> {
+                            // handle block
+                            true
+                        }
+                        // 其他菜单项的处理
+                        else -> false
+                    }
+                }
+                popupMenu.show()
+            }
+        }*/
+
 
 }

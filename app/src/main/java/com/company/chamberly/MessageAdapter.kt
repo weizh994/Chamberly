@@ -28,6 +28,14 @@ class MessageAdapter(private val uid: String) :
     inner class MessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val textSender: TextView = itemView.findViewById(R.id.text_gchat_user_other)
         val textMessage: TextView = itemView.findViewById(R.id.text_gchat_message_other)
+        init {
+            // set on long click listener
+            itemView.setOnLongClickListener {
+                val message = messages[adapterPosition]
+                onMessageLongClickListener!!.onMessageLongClick(message)
+                true
+            }
+        }
     }
 
     inner class MessageViewHolderMe(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -95,17 +103,6 @@ class MessageAdapter(private val uid: String) :
         fun onMessageLongClick(message: Message)
     }
 
-    /*private fun showPopupWindow(layoutInflater: LayoutInflater, anchorView: View) {
-        val popupView = layoutInflater.inflate(R.menu.message_popup_menu, null)
-
-        val popupWindow = PopupWindow(popupView, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, true)
-
-        val xOff = (anchorView.width - popupView.measuredWidth) / 2
-        val yOff = (anchorView.height - popupView.measuredHeight) / 2
-
-        popupWindow.showAsDropDown(anchorView, xOff, yOff)
-    }
-    */
 
 }
 

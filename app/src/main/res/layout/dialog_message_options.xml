@@ -1,0 +1,39 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center">
+
+    <TextView
+        android:id="@+id/DialogTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="DisplayName"
+        android:textSize="20sp" />
+
+    <TextView
+        android:id="@+id/MessageContent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Text"
+        android:textSize="16sp" />
+
+    <Button
+        android:id="@+id/buttonCopy"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Copy" />
+
+    <Button
+        android:id="@+id/buttonReport"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Report User" />
+
+    <Button
+        android:id="@+id/buttonBlock"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Block User" />
+
+</LinearLayout>

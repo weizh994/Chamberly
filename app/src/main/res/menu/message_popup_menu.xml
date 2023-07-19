@@ -6,9 +6,18 @@
         android:id="@+id/menu_copy"
         android:title="Coyp"
         />
+
     <item
         android:id="@+id/menu_report"
-        android:title="Report User" />
+        android:title="Report User" >
+        <menu >
+            <item android:title="Harassment or bullying" />
+            <item android:title="Inappropriate Behaviour" />
+            <item android:title="Unsupportive behaviour" />
+            <item android:title="Spamming" />
+            <item android:title="Annoying" />
+        </menu>
+    </item>
     <item
         android:id="@+id/menu_block"
         android:title="Block User" />

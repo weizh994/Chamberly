@@ -1,0 +1,50 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/textReportTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Reporting DisplayName"
+        android:textAppearance="?android:textAppearanceMedium" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Choose the reason for this report"
+        android:textAppearance="?android:textAppearanceMedium" />
+
+
+    <Button
+        android:id="@+id/buttonHarassment"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Harassment or bullying" />
+
+    <Button
+        android:id="@+id/buttonInappropriateBehavior"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Inappropriate Behaviour" />
+
+    <Button
+        android:id="@+id/buttonUnsupportiveBehavior"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Unsupportive behaviour" />
+
+    <Button
+        android:id="@+id/buttonSpamming"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Spamming" />
+
+    <Button
+        android:id="@+id/buttonAnnoying"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Annoying" />
+
+</LinearLayout>
