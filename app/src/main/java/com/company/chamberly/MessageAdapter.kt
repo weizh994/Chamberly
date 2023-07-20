@@ -33,6 +33,7 @@ class MessageAdapter(private val uid: String) :
             itemView.setOnLongClickListener {
                 val message = messages[adapterPosition]
                 onMessageLongClickListener!!.onMessageLongClick(message)
+                onMessageLongClickListener!!.onSelfLongClick(message)
                 true
             }
         }
@@ -62,6 +63,10 @@ class MessageAdapter(private val uid: String) :
         when (holder) {
             is MessageViewHolderMe -> {
                 holder.textMessage.text = message.message_content
+                holder.itemView.setOnLongClickListener {
+                    onMessageLongClickListener?.onSelfLongClick(message)
+                    true
+                }
             }
             is MessageViewHolder -> {
                 holder.textSender.text = message.sender_name
@@ -101,6 +106,7 @@ class MessageAdapter(private val uid: String) :
 
     interface OnMessageLongClickListener {
         fun onMessageLongClick(message: Message)
+        fun onSelfLongClick(message: Message)
     }
 
 

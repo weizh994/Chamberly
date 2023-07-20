@@ -6,23 +6,23 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
-import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
-import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.play.integrity.internal.c
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.reflect.TypeToken
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.database
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
@@ -57,6 +57,9 @@ class ChatActivity : ComponentActivity(){
         messageAdapter.setOnMessageLongClickListener(object : MessageAdapter.OnMessageLongClickListener {
             override fun onMessageLongClick(message: Message) {
                 showDialog(message)
+            }
+            override fun onSelfLongClick(message: Message) {
+                showSelfDialog(message)
             }
         })
         recyclerView.adapter = messageAdapter
@@ -175,19 +178,79 @@ class ChatActivity : ComponentActivity(){
 
     }
     // report user
-    private  fun reportUser(message: Message){
+    private  fun reportUser(message: Message, reason: String){
         // Todo: report user
+
 
     }
     // block user
-    private fun blockUser(message: Message){
+    private fun blockUser(message: Message) {
+        val sharedPreferences = getSharedPreferences("cache", Context.MODE_PRIVATE)
+        val uid = message.uid
 
+        firestore.collection("GroupChatIds").document(groupChatId!!)
+            .get()
+            .addOnSuccessListener { documentSnapshot ->
+                if (documentSnapshot.exists()) {
+                    val blockedUsers = documentSnapshot.get("blockedUsers") as? ArrayList<String>
+                    if (blockedUsers != null) {
+                        if (uid in blockedUsers) {
+                            Toast.makeText(this, "User has been blocked", Toast.LENGTH_SHORT).show()
+                            Log.e("BlockUser", "User has been blocked")
+                        } else {
+                            // Add user to blocked list
+                            val updatedBlockedUsers = ArrayList<String>(blockedUsers)
+                            updatedBlockedUsers.add(uid)
+
+                            firestore.collection("GroupChatIds").document(groupChatId!!)
+                                .update("blockedUsers", updatedBlockedUsers)
+                                .addOnSuccessListener {
+                                    Toast.makeText(this, "User blocked", Toast.LENGTH_SHORT).show()
+                                }
+                                .addOnFailureListener {
+                                    Toast.makeText(this, "Error blocking user", Toast.LENGTH_SHORT).show()
+                                }
+                        }
+                    }
+                }
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Error retrieving blocked users", Toast.LENGTH_SHORT).show()
+            }
     }
+
 
 
     override fun onDestroy() {
         onBackPressedCallback.remove()
         super.onDestroy()
+    }
+
+    private fun showSelfDialog(message: Message){
+        val dialog = Dialog(this, R.style.Dialog)
+        dialog.setContentView(R.layout.dialog_self_message_options)
+
+        val  dialogTitle = dialog.findViewById<TextView>(R.id.DialogTitle)
+        dialogTitle.text = message.sender_name
+        val dialogMessage = dialog.findViewById<TextView>(R.id.MessageContent)
+        dialogMessage.text = message.message_content
+
+        val copyButton = dialog.findViewById<Button>(R.id.buttonCopy)
+
+        // set dialog window's width and height
+        val window = dialog.window
+        val layoutParams = WindowManager.LayoutParams()
+        layoutParams.copyFrom(window?.attributes)
+        layoutParams.width = WindowManager.LayoutParams.WRAP_CONTENT
+        layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT
+        window?.attributes = layoutParams
+
+        copyButton.setOnClickListener {
+            copyMessage(message)
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 
     private fun showDialog(message: Message) {
@@ -246,6 +309,27 @@ class ChatActivity : ComponentActivity(){
             dialog.findViewById<Button>(R.id.buttonUnsupportiveBehavior)
         val spammingButton = dialog.findViewById<Button>(R.id.buttonSpamming)
         val annoyingButton = dialog.findViewById<Button>(R.id.buttonAnnoying)
+
+        harassmentButton.setOnClickListener {
+            reportUser(message, "harassment")
+            dialog.dismiss()
+        }
+        inappropriateBehaviorButton.setOnClickListener {
+            reportUser(message, "inappropriate behavior")
+            dialog.dismiss()
+        }
+        unsupportiveBehaviorButton.setOnClickListener {
+            reportUser(message, "unsupportive behavior")
+            dialog.dismiss()
+        }
+        spammingButton.setOnClickListener {
+            reportUser(message, "Spamming")
+            dialog.dismiss()
+        }
+        annoyingButton.setOnClickListener {
+            reportUser(message, "Annoying")
+            dialog.dismiss()
+        }
     }
 
         /*companion object {
