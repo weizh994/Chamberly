@@ -3,6 +3,7 @@ package com.company.chamberly
 import android.app.Dialog
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.ContentValues.TAG
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
@@ -179,7 +180,43 @@ class ChatActivity : ComponentActivity(){
     }
     // report user
     private  fun reportUser(message: Message, reason: String){
-        // Todo: report user
+        // Todo: get chamber info early
+
+
+        val sharedPreferences = getSharedPreferences("cache", Context.MODE_PRIVATE)
+        val UID = sharedPreferences.getString("uid", auth.currentUser?.uid)
+
+        firestore.collection("GroupChatIds").document(groupChatId).get()
+            .addOnSuccessListener { document ->
+                if (document != null) {
+                    //Log.d(TAG, "DocumentSnapshot data: ${document.data}")
+                    val authorName = document.get("authorName") as? String
+                    val report = hashMapOf(
+                        "against" to message.uid,
+                        "by" to UID,
+                        "groupChatId" to groupChatId,
+                        "realHost" to "",
+                        "reason" to reason,
+                        "reportDate" to FieldValue.serverTimestamp(),
+                        "realHost" to authorName,
+                        "ticketTaken" to false
+                        //"Title" to ?
+                    )
+                    firestore.collection("Reports").add(report)
+                        .addOnSuccessListener {
+                            Toast.makeText(this, "User reported", Toast.LENGTH_SHORT).show()
+                        }
+                } else {
+                    Log.d(TAG, "No such document")
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.d(TAG, "get failed with ", exception)
+            }
+
+
+
+
 
 
     }
@@ -330,34 +367,10 @@ class ChatActivity : ComponentActivity(){
             reportUser(message, "Annoying")
             dialog.dismiss()
         }
-    }
 
-        /*companion object {
-            private fun showPopupMenu(chatActivity: ChatActivity, message: Message) {
-                val popupMenu = PopupMenu(chatActivity, chatActivity.recyclerView)
-                popupMenu.menuInflater.inflate(R.menu.message_popup_menu, popupMenu.menu)
-                popupMenu.setOnMenuItemClickListener { menuItem ->
-                    when (menuItem.itemId) {
-                        R.id.menu_copy -> {
-                            // handle copy
-                            chatActivity.copyMessage(message)
-                            true
-                        }
-                        R.id.menu_report ->{
-                            // handle report
-                            true
-                        }
-                        R.id.menu_block -> {
-                            // handle block
-                            true
-                        }
-                        // 其他菜单项的处理
-                        else -> false
-                    }
-                }
-                popupMenu.show()
-            }
-        }*/
+        // show Dialog
+        dialog.show()
+    }
 
 
 }
