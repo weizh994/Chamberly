@@ -241,7 +241,12 @@ class SearchActivity : ComponentActivity() ,KolodaListener{
                         firestore.collection("GroupChatIds").document(chamber.groupChatId).update("locked" , true)
                             .addOnSuccessListener{
                                 val intent = Intent(this@SearchActivity, ChatActivity::class.java)
+                                //TODO : pass chamber object to ChatActivity
+                                //intent.putExtra("chamber", chamber)
                                 intent.putExtra("groupChatId", chamber.groupChatId)
+                                intent.putExtra("groupTitle", chamber.groupTitle)
+                                intent.putExtra("authorName",chamber.authorName)
+                                intent.putExtra("authorUID",chamber.authorUID)
                                 startActivity(intent)
                                 finish()
                             }

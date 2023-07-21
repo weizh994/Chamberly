@@ -1,6 +1,7 @@
 package com.company.chamberly
 
 import com.google.firebase.firestore.FieldValue
+import java.io.Serializable
 
 data class Chamber(
     val authorName: String = "", // Display name of the chamber author (retrieved from cache)
@@ -14,4 +15,4 @@ data class Chamber(
     val membersLimit: Int = 2, // Set to 2
     val publishedPool: Boolean = true, // Set to true
     val timestamp: Any = FieldValue.serverTimestamp() // Timestamp of chamber creation
-)
+): Serializable

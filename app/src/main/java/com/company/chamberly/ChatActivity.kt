@@ -10,6 +10,7 @@ import android.util.Log
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -34,7 +35,11 @@ class ChatActivity : ComponentActivity(){
     private lateinit var cacheFile : File   // cache file
     private lateinit var recyclerView: RecyclerView
     private lateinit var messageAdapter: MessageAdapter
+    //private lateinit var chamber: Chamber
     private lateinit var groupChatId: String
+    private lateinit var groupTitle :String
+    private lateinit var authorName :String
+    private lateinit var authorUID : String
     private lateinit var onBackPressedCallback: OnBackPressedCallback
     private var messages = mutableListOf<Message>() // message list
     private val auth = Firebase.auth                // get current user
@@ -50,7 +55,11 @@ class ChatActivity : ComponentActivity(){
         val uid = sharedPreferences.getString("uid", "") ?: currentUser?.uid // get uid
 
         messageAdapter = MessageAdapter(uid!!) // create message adapter
-        groupChatId = intent.getStringExtra("groupChatId") ?: "" // get group chat id
+        //chamber = intent.getSerializableExtra("chamber") as Chamber // get chamber
+        groupChatId = intent.getStringExtra("groupChatId") as String// get group chat id
+        groupTitle = intent.getStringExtra("groupTitle") as String   // get group chat title
+        authorName = intent.getStringExtra("authorName") as String  // get author name
+        authorUID = intent.getStringExtra("authorUID") as String    // get authorUID
         recyclerView = findViewById(R.id.recyclerViewMessages)         // get recycler view
         recyclerView.adapter = messageAdapter
         recyclerView.layoutManager = LinearLayoutManager(this)
@@ -116,6 +125,17 @@ class ChatActivity : ComponentActivity(){
             }
         })
 
+        // Find the information bar
+        val infoBar = findViewById<LinearLayout>(R.id.infoBar)
+
+        // Set click listener for the information bar
+        infoBar.setOnClickListener {
+            showInfoDialog()
+        }
+
+        val titleTextView = findViewById<TextView>(R.id.groupTitle)
+        titleTextView.text = groupTitle
+
         val sendButton = findViewById<Button>(R.id.buttonSend)
         sendButton.setOnClickListener {
             val editText = findViewById<EditText>(R.id.editTextMessage)
@@ -143,6 +163,9 @@ class ChatActivity : ComponentActivity(){
         }
         this@ChatActivity.onBackPressedDispatcher.addCallback(onBackPressedCallback)
     }
+
+
+
     fun exitChat(groupChatId: String){
         lateinit var authorUID : String
         firestore.collection("GroupChatIds").document(groupChatId).get().addOnSuccessListener {
@@ -186,39 +209,22 @@ class ChatActivity : ComponentActivity(){
         val sharedPreferences = getSharedPreferences("cache", Context.MODE_PRIVATE)
         val UID = sharedPreferences.getString("uid", auth.currentUser?.uid)
 
-        firestore.collection("GroupChatIds").document(groupChatId).get()
-            .addOnSuccessListener { document ->
-                if (document != null) {
-                    //Log.d(TAG, "DocumentSnapshot data: ${document.data}")
-                    val authorName = document.get("authorName") as? String
-                    val report = hashMapOf(
-                        "against" to message.uid,
-                        "by" to UID,
-                        "groupChatId" to groupChatId,
-                        "realHost" to "",
-                        "reason" to reason,
-                        "reportDate" to FieldValue.serverTimestamp(),
-                        "realHost" to authorName,
-                        "ticketTaken" to false
-                        //"Title" to ?
-                    )
-                    firestore.collection("Reports").add(report)
-                        .addOnSuccessListener {
-                            Toast.makeText(this, "User reported", Toast.LENGTH_SHORT).show()
-                        }
-                } else {
-                    Log.d(TAG, "No such document")
-                }
+
+        val report = hashMapOf(
+            "against" to message.uid,
+            "by" to UID,
+            "groupChatId" to groupChatId,
+            "realHost" to "",
+            "reason" to reason,
+            "reportDate" to FieldValue.serverTimestamp(),
+            "realHost" to authorName,
+            "ticketTaken" to false
+            //"Title" to ?
+        )
+        firestore.collection("Reports").add(report)
+            .addOnSuccessListener {
+                Toast.makeText(this, "User reported", Toast.LENGTH_SHORT).show()
             }
-            .addOnFailureListener { exception ->
-                Log.d(TAG, "get failed with ", exception)
-            }
-
-
-
-
-
-
     }
     // block user
     private fun blockUser(message: Message) {
@@ -334,7 +340,7 @@ class ChatActivity : ComponentActivity(){
     }
 
     private fun showReportDialog(message: Message) {
-        val dialog = Dialog(this)
+        val dialog = Dialog(this, R.style.Dialog)
         dialog.setContentView(R.layout.dialog_report_options)
 
         val titleTextView = dialog.findViewById<TextView>(R.id.textReportTitle)
@@ -370,6 +376,42 @@ class ChatActivity : ComponentActivity(){
 
         // show Dialog
         dialog.show()
+    }
+    private fun showInfoDialog() {
+
+        val dialog = Dialog(this, R.style.Dialog)
+        dialog.setContentView(R.layout.dialog_info)
+
+        val deleteButton = dialog.findViewById<Button>(R.id.btn_delete_chamber)
+        //TODO("Not yet implemented")
+
+        deleteButton.setOnClickListener {
+            deleteChamber(groupChatId)
+            dialog.dismiss()
+        }
+
+        val sharedPreferences = getSharedPreferences("cache", Context.MODE_PRIVATE)
+        val UID = sharedPreferences.getString("uid", auth.currentUser?.uid)
+
+        // Show the dialog
+        if(UID==authorUID)
+        {
+            dialog.show()
+        }
+
+    }
+
+    private fun deleteChamber(groupChatId: String) {
+        val messagesRef = database.getReference(groupChatId!!)
+
+        messagesRef.removeValue()
+            .addOnSuccessListener {
+                finish()
+                Log.d(TAG, "DocumentSnapshot successfully deleted!")
+
+            }
+            .addOnFailureListener { e -> Log.w(TAG, "Error deleting document", e) }
+
     }
 
 

@@ -83,7 +83,12 @@ class CreateActivity : ComponentActivity() {
                         val hostRef = membersRef.child(chamber.authorUID)
                         hostRef.setValue(authorName).addOnSuccessListener {
                             val intent = Intent(this@CreateActivity, ChatActivity::class.java)
+                            //TODO : pass chamber object to ChatActivity
+                            //intent.putExtra("chamber", chamber)
                             intent.putExtra("groupChatId", chamber.groupChatId)
+                            intent.putExtra("groupTitle", chamber.groupTitle)
+                            intent.putExtra("authorName",chamber.authorName)
+                            intent.putExtra("authorUID",chamber.authorUID)
                             startActivity(intent)
                             finish()
                         }
