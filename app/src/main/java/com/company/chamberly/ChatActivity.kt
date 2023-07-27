@@ -15,6 +15,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.play.integrity.internal.c
@@ -156,7 +157,22 @@ class ChatActivity : ComponentActivity(){
                 }
         }
 
-        onBackPressedCallback = object : OnBackPressedCallback(true) {
+        // Add a listener to check if the user's username exists in the "members" node
+        database.reference.child(groupChatId).child("Users").child("members")
+            .addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val uid = sharedPreferences.getString("uid", auth.currentUser?.uid)
+                if (!snapshot.hasChild(uid!!)) {
+                    // User's username does not exist in "members" node, exit the chat
+                    exitChat(groupChatId!!)
+                }
+            }
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("ChatActivity", "Error checking chat membership: ${error.message}")
+            }
+        })
+
+    onBackPressedCallback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 exitChat(groupChatId)
             }
@@ -170,8 +186,9 @@ class ChatActivity : ComponentActivity(){
         lateinit var authorUID : String
         firestore.collection("GroupChatIds").document(groupChatId).get().addOnSuccessListener {
             authorUID = it.getString("authorUID")!!
-            // TODO:  use cache uid instead of auth.currentUser!!.uid
-            if(authorUID != auth.currentUser!!.uid){
+
+            finish()    // alternative: exit the chat
+            /*if(authorUID != auth.currentUser!!.uid){
                 // delete the group chat id from the user's list
                 database.reference.child(groupChatId).child("Users").child("members").child(auth.currentUser!!.uid).removeValue()
                     .addOnSuccessListener {
@@ -188,7 +205,7 @@ class ChatActivity : ComponentActivity(){
             }
             else{
                 finish()
-            }
+            }*/
         }
     }
 
@@ -204,7 +221,6 @@ class ChatActivity : ComponentActivity(){
     // report user
     private  fun reportUser(message: Message, reason: String){
         // Todo: get chamber info early
-
 
         val sharedPreferences = getSharedPreferences("cache", Context.MODE_PRIVATE)
         val UID = sharedPreferences.getString("uid", auth.currentUser?.uid)
@@ -229,37 +245,17 @@ class ChatActivity : ComponentActivity(){
     // block user
     private fun blockUser(message: Message) {
         val sharedPreferences = getSharedPreferences("cache", Context.MODE_PRIVATE)
+        val localUID = sharedPreferences.getString("uid", auth.currentUser?.uid)// get uid from cache or firebase
+
         val uid = message.uid
 
-        firestore.collection("GroupChatIds").document(groupChatId!!)
-            .get()
-            .addOnSuccessListener { documentSnapshot ->
-                if (documentSnapshot.exists()) {
-                    val blockedUsers = documentSnapshot.get("blockedUsers") as? ArrayList<String>
-                    if (blockedUsers != null) {
-                        if (uid in blockedUsers) {
-                            Toast.makeText(this, "User has been blocked", Toast.LENGTH_SHORT).show()
-                            Log.e("BlockUser", "User has been blocked")
-                        } else {
-                            // Add user to blocked list
-                            val updatedBlockedUsers = ArrayList<String>(blockedUsers)
-                            updatedBlockedUsers.add(uid)
-
-                            firestore.collection("GroupChatIds").document(groupChatId!!)
-                                .update("blockedUsers", updatedBlockedUsers)
-                                .addOnSuccessListener {
-                                    Toast.makeText(this, "User blocked", Toast.LENGTH_SHORT).show()
-                                }
-                                .addOnFailureListener {
-                                    Toast.makeText(this, "Error blocking user", Toast.LENGTH_SHORT).show()
-                                }
-                        }
-                    }
+        if(authorUID == localUID){
+            // delete the group chat id from the user's list
+            database.reference.child(groupChatId).child("Users").child("members").child(uid).removeValue()
+                .addOnSuccessListener {
+                    Toast.makeText(this, "User banned", Toast.LENGTH_SHORT).show()
                 }
-            }
-            .addOnFailureListener {
-                Toast.makeText(this, "Error retrieving blocked users", Toast.LENGTH_SHORT).show()
-            }
+        }
     }
 
 
@@ -284,8 +280,8 @@ class ChatActivity : ComponentActivity(){
         val window = dialog.window
         val layoutParams = WindowManager.LayoutParams()
         layoutParams.copyFrom(window?.attributes)
-        layoutParams.width = WindowManager.LayoutParams.WRAP_CONTENT
-        layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT
+        //layoutParams.width = WindowManager.LayoutParams.WRAP_CONTENT
+        //layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT
         window?.attributes = layoutParams
 
         copyButton.setOnClickListener {
@@ -297,8 +293,25 @@ class ChatActivity : ComponentActivity(){
     }
 
     private fun showDialog(message: Message) {
+
+        val sharedPreferences = getSharedPreferences("cache", Context.MODE_PRIVATE)
+        val localUID = sharedPreferences.getString("uid", auth.currentUser?.uid)// get uid from cache or firebase
+
         val dialog = Dialog(this, R.style.Dialog)
-        dialog.setContentView(R.layout.dialog_message_options)
+
+        if(localUID == authorUID){
+            dialog.setContentView(R.layout.dialog_host_message_options)
+            val blockButton = dialog.findViewById<Button>(R.id.buttonBlock)
+
+            // set block button's click listener
+            blockButton.setOnClickListener {
+                blockUser(message)
+                dialog.dismiss()
+            }
+        }
+        else{
+            dialog.setContentView(R.layout.dialog_message_options)
+        }
 
         val dialogTitle = dialog.findViewById<TextView>(R.id.DialogTitle)
         dialogTitle.text = message.sender_name
@@ -307,14 +320,14 @@ class ChatActivity : ComponentActivity(){
 
         val copyButton = dialog.findViewById<Button>(R.id.buttonCopy)
         val reportButton = dialog.findViewById<Button>(R.id.buttonReport)
-        val blockButton = dialog.findViewById<Button>(R.id.buttonBlock)
+
 
         // set dialog window's width and height
         val window = dialog.window
         val layoutParams = WindowManager.LayoutParams()
         layoutParams.copyFrom(window?.attributes)
-        layoutParams.width = WindowManager.LayoutParams.WRAP_CONTENT
-        layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT
+        //layoutParams.width = WindowManager.LayoutParams.WRAP_CONTENT
+        //layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT
         window?.attributes = layoutParams
 
         // set copy button's click listener
@@ -326,12 +339,6 @@ class ChatActivity : ComponentActivity(){
         // set report button's click listener
         reportButton.setOnClickListener {
             showReportDialog(message)
-            dialog.dismiss()
-        }
-
-        // set block button's click listener
-        blockButton.setOnClickListener {
-            blockUser(message)
             dialog.dismiss()
         }
 
@@ -406,9 +413,11 @@ class ChatActivity : ComponentActivity(){
 
         messagesRef.removeValue()
             .addOnSuccessListener {
-                finish()
-                Log.d(TAG, "DocumentSnapshot successfully deleted!")
-
+                firestore.collection("GroupChatIds").document(groupChatId).delete()
+                    .addOnSuccessListener {
+                        Toast.makeText(this, "Chamber deleted", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
             }
             .addOnFailureListener { e -> Log.w(TAG, "Error deleting document", e) }
 

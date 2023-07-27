@@ -1,6 +1,6 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="300dp"
-    android:layout_height="150dp"
+    android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="5dp"
     android:gravity="center">
@@ -25,5 +25,18 @@
         android:layout_height="wrap_content"
         android:text="Copy" />
 
+    <Button
+        android:id="@+id/buttonReport"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Report User" />
+
+    <Button
+        android:id="@+id/buttonBlock"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Ban User"
+        android:textColor="@color/red"
+        />
 
 </LinearLayout>

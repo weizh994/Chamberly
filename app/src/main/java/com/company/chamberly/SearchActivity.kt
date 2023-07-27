@@ -8,24 +8,13 @@ import android.util.Log
 import android.widget.ImageButton
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
-import com.google.android.gms.tasks.Tasks
-import com.google.android.play.integrity.internal.f
 import com.google.firebase.auth.ktx.auth
-import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ktx.database
-import com.google.firebase.firestore.DocumentSnapshot
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import com.yalantis.library.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withContext
-import org.checkerframework.checker.units.qual.A
-import java.lang.reflect.Member
+import com.yalantis.library.Koloda
+import com.yalantis.library.KolodaListener
 
 
 // Firebase lock system: block other users from joining a chamber
