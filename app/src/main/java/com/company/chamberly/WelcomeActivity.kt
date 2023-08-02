@@ -8,7 +8,6 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.ktx.firestore
@@ -22,12 +21,24 @@ class WelcomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_welcome)
         val currentUser = auth.currentUser
+        // Check if the user is logged in
         if (currentUser != null) {
-            Toast.makeText(this, "Welcome back!", Toast.LENGTH_SHORT).show()
-            val intent = intent
-            intent.setClass(this, MainActivity::class.java)
-            startActivity(intent)
+            userExist(currentUser.uid) { exists ->
+                if (exists) {
+                    // The user exists
+                    Toast.makeText(this, "Welcome back!", Toast.LENGTH_SHORT).show()
+                    val intent = Intent(this, MainActivity::class.java)
+                    startActivity(intent)
+                } else {
+                    // The user does not exist
+                    // Handle the case when the user does not exist
+                    // For example, show a login screen or redirect to sign up page
+                }
+            }
         } else {
+            // The user is not logged in
+            // Handle the case when the user is not logged in
+            // For example, show a login screen or redirect to sign up page
             auth.signInAnonymously()
                 .addOnCompleteListener(this) { task ->
                     if (task.isSuccessful) {
@@ -48,6 +59,33 @@ class WelcomeActivity : AppCompatActivity() {
             Check()
         }
     }
+
+
+    //TODO: Check if user exist in database
+    private fun userExist(uid: String, callback: (Boolean) -> Unit) {
+        // Check if UID is exist in Display_Names collection
+        val displayNameRef = database.collection("Display_Names").whereEqualTo("UID", uid)
+        displayNameRef.get()
+            .addOnSuccessListener { querySnapshot ->
+                if (!querySnapshot.isEmpty) {
+                    // Check if UID is exist in Accounts collection
+                    val accountRef = database.collection("Accounts").whereEqualTo("UID", uid)
+                    accountRef.get()
+                        .addOnSuccessListener { querySnapshot ->
+                            callback(!querySnapshot.isEmpty)
+                        }
+                        .addOnFailureListener { exception ->
+                            callback(false)
+                        }
+                } else {
+                    callback(false)
+                }
+            }
+            .addOnFailureListener { exception ->
+                callback(false)
+            }
+    }
+
     private fun Check() {
         val user = Firebase.auth.currentUser
         val editText = findViewById<EditText>(R.id.display_name)
@@ -56,27 +94,29 @@ class WelcomeActivity : AppCompatActivity() {
             val displayName = editText.text.toString()
 
             // Check if displayName is already used
-            val displayNameRef = database.collection("Display_Name").whereEqualTo("displayName", displayName)
+            val displayNameRef = database.collection("Display_Names").whereEqualTo("displayName", displayName)
             displayNameRef.get()
                 .addOnSuccessListener { querySnapshot ->
                     if (querySnapshot.isEmpty) {
                         // displayName is available, proceed with storing data
-                        val displayNameData = DisplayName(
-                            displayName = displayName,
-                            email = "${user.uid}@chamberly.net",
-                            uid = user.uid
+                        val displayNameData = mapOf(
+                            "Display_Name" to displayName,
+                            "Email" to "${user.uid}@chamberly.net",
+                            "UID" to user.uid
                         )
-                        database.collection("Display_Name").document(displayName)
+                        database.collection("Display_Names").document(displayName)
                             .set(displayNameData)
                             .addOnSuccessListener {
                                 // Add a new document with a generated ID into Account collection
                                 Toast.makeText(this, "Welcome to Chamberly!", Toast.LENGTH_SHORT).show()
-                                val account = Account(
-                                    displayName = displayName,
-                                    email = "${user.uid}@chamberly.net",
-                                    uid = user.uid
+                                val account = mapOf(
+                                    "UID" to user.uid,
+                                    "Display_Name" to displayName,
+                                    "Email" to "${user.uid}@chamberly.net",
+                                    "platform" to "android",
+                                    "timestamp" to FieldValue.serverTimestamp()
                                 )
-                                database.collection("Account").document(user.uid.toString())
+                                database.collection("Accounts").document(user.uid.toString())
                                     .set(account)
                                     .addOnSuccessListener {
                                         Log.d("TAG", "DocumentSnapshot successfully written!")

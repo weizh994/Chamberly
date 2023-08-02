@@ -31,6 +31,9 @@ import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
 import java.io.File
 
+
+// TODO: Check caps and lowercase in both database and firestore
+
 class ChatActivity : ComponentActivity(){
     // TODO: add chat cache
     private lateinit var cacheFile : File   // cache file
@@ -186,26 +189,19 @@ class ChatActivity : ComponentActivity(){
         lateinit var authorUID : String
         firestore.collection("GroupChatIds").document(groupChatId).get().addOnSuccessListener {
             authorUID = it.getString("authorUID")!!
-
-            finish()    // alternative: exit the chat
-            /*if(authorUID != auth.currentUser!!.uid){
+            // TODO: disconnect from the firebase
+            //finish()    // alternative: exit the chat
+            if(authorUID != auth.currentUser!!.uid){
                 // delete the group chat id from the user's list
                 database.reference.child(groupChatId).child("Users").child("members").child(auth.currentUser!!.uid).removeValue()
                     .addOnSuccessListener {
-                        firestore.collection("GroupChatIds").document(groupChatId)
-                            .update("locked" , false)
-                            .addOnSuccessListener { firestore.collection("GroupChatIds").document(groupChatId)
-                                .update("publishedPool", true)
-                                .addOnSuccessListener {
-                                    finish()
-                                }
-                            }
+                       finish()
                     }
 
             }
             else{
                 finish()
-            }*/
+            }
         }
     }
 
@@ -227,7 +223,7 @@ class ChatActivity : ComponentActivity(){
 
 
         val report = hashMapOf(
-            "against" to message.uid,
+            "against" to message.UID,
             "by" to UID,
             "groupChatId" to groupChatId,
             "realHost" to "",
@@ -247,7 +243,7 @@ class ChatActivity : ComponentActivity(){
         val sharedPreferences = getSharedPreferences("cache", Context.MODE_PRIVATE)
         val localUID = sharedPreferences.getString("uid", auth.currentUser?.uid)// get uid from cache or firebase
 
-        val uid = message.uid
+        val uid = message.UID
 
         if(authorUID == localUID){
             // delete the group chat id from the user's list
