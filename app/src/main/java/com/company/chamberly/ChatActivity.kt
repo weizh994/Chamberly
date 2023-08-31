@@ -23,16 +23,19 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.reflect.TypeToken
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.database
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.messaging.FirebaseMessaging
 import com.google.gson.Gson
 import java.io.File
 
 
 // TODO: Check caps and lowercase in both database and firestore
+// TODO: Add notificationKey before disconnecting (home/quit/exit)
 
 class ChatActivity : ComponentActivity(){
     // TODO: add chat cache
@@ -57,6 +60,13 @@ class ChatActivity : ComponentActivity(){
         val sharedPreferences = getSharedPreferences("cache", Context.MODE_PRIVATE) // get shared preferences
         val currentUser = auth.currentUser // get current user
         val uid = sharedPreferences.getString("uid", "") ?: currentUser?.uid // get uid
+
+        // init Firebase Cloud Messaging
+        FirebaseMessaging.getInstance().isAutoInitEnabled = true
+
+        val notificationKey = FirebaseMessaging.getInstance().getToken().toString()
+
+        Log.e("ChatActivity", "FCM token: ${notificationKey}")
 
         messageAdapter = MessageAdapter(uid!!) // create message adapter
         //chamber = intent.getSerializableExtra("chamber") as Chamber // get chamber
@@ -254,11 +264,10 @@ class ChatActivity : ComponentActivity(){
         }
     }
 
-
-
     override fun onDestroy() {
         onBackPressedCallback.remove()
         super.onDestroy()
+        Log.e("ChatActivity", "onDestroy")
     }
 
     private fun showSelfDialog(message: Message){
@@ -419,5 +428,52 @@ class ChatActivity : ComponentActivity(){
 
     }
 
+    override fun onPause() {
+        super.onPause()
+
+        Log.e("ChatActivity", "onPause")
+
+        // init Firebase Cloud Messaging
+        FirebaseMessaging.getInstance().isAutoInitEnabled = true
+
+        val notificationKey = FirebaseMessaging.getInstance().getToken().toString()
+
+        Log.e("ChatActivity", "FCM token: ${notificationKey}")
+
+        val userRef = database.getReference(groupChatId!!).child("Users").child("members").child(auth.currentUser!!.uid)
+
+        val updateMap = mapOf(
+            "notificationKey" to notificationKey // notificationKey
+        )
+
+        userRef.updateChildren(updateMap)
+            .addOnSuccessListener {
+                Log.d("NotificationKey", "User marked as offline")
+            }
+            .addOnFailureListener { e ->
+                Log.e("NotificationKey", "Error marking user as offline: $e")
+            }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        Log.e("ChatActivity", "onResume")
+
+        val userRef = database.getReference(groupChatId!!).child("Users").child("members").child(auth.currentUser!!.uid)
+
+        val updateMap = mapOf(
+            "notificationKey" to null // Set the value to null to remove the notificationKey
+        )
+
+        // TODO： didnot work, should be fixed
+        /*userRef.updateChildren(updateMap)
+            .addOnSuccessListener {
+                Log.d("NotificationKey", "notificationKey removed")
+            }
+            .addOnFailureListener { e ->
+                Log.e("NotificationKey", "Error removing notificationKey: $e")
+            }*/
+    }
 
 }

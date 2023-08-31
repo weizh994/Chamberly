@@ -4,18 +4,13 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.text.InputFilter
-import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
-import com.google.firebase.FirebaseApp
-import com.google.firebase.FirebaseOptions
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.Logger
-import com.google.firebase.database.ktx.database
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
